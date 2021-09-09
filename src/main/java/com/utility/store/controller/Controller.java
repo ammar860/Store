@@ -2,55 +2,68 @@ package com.utility.store.controller;
 
 
 import com.utility.store.dto.StoreMasterDTO;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.http.HttpStatus;
+import com.utility.store.service.FileService;
+import com.utility.store.service.StoreService;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import java.lang.reflect.Field;
-import java.util.*;
+
+import java.util.List;
+import java.util.Map;
 
 
 @RestController
 @RequestMapping(value = "/store")
 public class Controller {
 
-    @RequestMapping(method = RequestMethod.POST,value = "/pase1")
+    @Autowired
+    StoreService storeService;
+    @Autowired
+    FileService fileService;
+    @RequestMapping(method = RequestMethod.POST,value = "/getExcelHeaders")
     public ResponseEntity<?> Phase1(@RequestBody MultipartFile file) {
         JSONObject responseJsonObject = new JSONObject();
         try {
             if (file.getOriginalFilename().endsWith(".xlsx")){
-                XSSFWorkbook workbook = new XSSFWorkbook(file.getInputStream());
-                XSSFSheet sheet = workbook.getSheetAt(0);
-                Row row;
-                Cell cell;
-                Field[] prop = StoreMasterDTO.class.getDeclaredFields();
-                row = sheet.getRow(0);
-                java.util.Iterator<Cell> cellItr =  row.cellIterator();
-                ListIterator<Field> fields =  Arrays.asList(prop).listIterator();
-                List<Map<String,Object>> list = new ArrayList<>();
-
-                while(cellItr.hasNext()) {
-                    cell = cellItr.next();
-                    Map<String,Object> obj = new HashMap<>();
-                    Field field = fields.next();
-                    obj.put("Excel Header",cell.getStringCellValue());
-                    obj.put("Store Master",field.getName());
-                    list.add(obj);
-                }
+                List<Map<String,Object>> list ;
+                fileService.saveFile(file.getBytes());
+                list = storeService.readExcelHeaders(file.getInputStream());
                 String message = "task performed successfully";
                 responseJsonObject.put("success",true);
                 responseJsonObject.put("message",message);
                 responseJsonObject.put("data",list);
 
+
             }
+            else {
+                String message = "Wrong input file";
+                responseJsonObject.put("success",false);
+                responseJsonObject.put("message",message);
+            }
+        }
+        catch (Exception e){
+            responseJsonObject.put("success",false);
+            responseJsonObject.put("message",e.getMessage());
+        }
+        return new ResponseEntity<>(responseJsonObject.toString(), HttpStatus.OK);
+    }
+
+    @RequestMapping(method = RequestMethod.POST,value = "/getData")
+    public ResponseEntity<?> Phase1(@RequestBody List<Map<String,String>> mapList) {
+        JSONObject responseJsonObject = new JSONObject();
+        try {
+            List<StoreMasterDTO> list ;
+            list = storeService.readExcelData(mapList);
+            String message = "task performed successfully";
+            responseJsonObject.put("success",true);
+            responseJsonObject.put("message",message);
+            responseJsonObject.put("data",list);
         }
         catch (Exception e){
             responseJsonObject.put("success",false);
