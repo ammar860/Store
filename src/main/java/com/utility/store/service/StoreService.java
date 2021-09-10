@@ -5,6 +5,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +18,8 @@ import java.util.*;
 
 @Service
 public class StoreService {
-
+    @Value("${app.config.lbs-file-name}")
+    String fileName;
 
     public List<Map<String,Object>> readExcelHeaders(InputStream is) throws IOException {
 
@@ -61,7 +63,7 @@ public class StoreService {
 
     public List<StoreMasterDTO> readExcelData(List<Map<String,String>> mapList ) throws IOException, NoSuchFieldException, IllegalAccessException {
         StoreService service = new StoreService();
-        ClassPathResource resource = new ClassPathResource("temp.xlsx");
+        ClassPathResource resource = new ClassPathResource(fileName);
         InputStream is = resource.getInputStream();
         InputStream inputStream = resource.getInputStream();
 

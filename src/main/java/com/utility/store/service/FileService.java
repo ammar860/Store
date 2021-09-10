@@ -1,6 +1,7 @@
 package com.utility.store.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -11,10 +12,14 @@ import java.net.MalformedURLException;
 
 @Service
 public class FileService {
+    @Value("${app.config.lbs-file-path}")
+    String filePath;
+    @Value("${app.config.lbs-file-name}")
+    String fileName;
 
     public String saveFile(byte[] bytes) throws MalformedURLException, IOException {
 
-        File file = new File("src/main/resources/" + "temp.xlsx");
+        File file = new File(filePath+fileName);
 
         OutputStream out = new FileOutputStream(file);
         try {
