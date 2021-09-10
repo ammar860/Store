@@ -9,17 +9,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
 import java.util.*;
 
 @Service
 public class StoreService {
-    @Value("${app.config.lbs-file-name}")
-    String fileName;
+        @Value("${app.config.lbs-file-path}")
+        String filePath;
 
     public List<Map<String,Object>> readExcelHeaders(InputStream is) throws IOException {
 
@@ -46,6 +44,22 @@ public class StoreService {
         list.add(obj);
         return list;
     }
+
+    public String saveFile(byte[] bytes) throws MalformedURLException, IOException {
+
+        String file_name = new Date().getTime() + ".xlsx";
+        File file = new File(filePath+file_name);
+
+        OutputStream out = new FileOutputStream(file);
+        try {
+            out.write(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            out.close();
+        }
+        return file.getName();
+    }
     public List<String> getHeaders(InputStream is) throws IOException {
 
         XSSFWorkbook workbook = new XSSFWorkbook(is);
@@ -61,9 +75,9 @@ public class StoreService {
     }
 
 
-    public List<StoreMasterDTO> readExcelData(List<Map<String,String>> mapList ) throws IOException, NoSuchFieldException, IllegalAccessException {
+    public List<StoreMasterDTO> readExcelData(List<Map<String,String>> mapList , String file_name) throws IOException, NoSuchFieldException, IllegalAccessException {
         StoreService service = new StoreService();
-        ClassPathResource resource = new ClassPathResource(fileName);
+        ClassPathResource resource = new ClassPathResource(file_name);
         InputStream is = resource.getInputStream();
         InputStream inputStream = resource.getInputStream();
 
@@ -75,22 +89,22 @@ public class StoreService {
         rowIterator.next();
         while (rowIterator.hasNext()){
             Row row = rowIterator.next();
-            for (Map<String,String> property: mapList ) {
+            //for (Map<String,String> property: mapList ) {
                 StoreMasterDTO storeMasterDTO = new StoreMasterDTO();
                 for (String str:excelHeaders    ) {
-                    Class cls = storeMasterDTO.getClass();
-                    if (property.get(str)!= null){
-                        Field field = cls.getDeclaredField(property.get(str));
-                        field.setAccessible(true);
-                        field.set(storeMasterDTO,row.getCell(excelHeaders.indexOf(str)).getStringCellValue());
+                    for (Map<String,String> property: mapList ) {
+                        Class cls = storeMasterDTO.getClass();
+                        if (property.get(str) != null) {
+                            Field field = cls.getDeclaredField(property.get(str));
+                            field.setAccessible(true);
+                            field.set(storeMasterDTO, row.getCell(excelHeaders.indexOf(str)).getStringCellValue());
+                        }
                     }
 
                 }
                 list.add(storeMasterDTO);
 
-
-
-            }
+            //}
         }
 
         return list;
