@@ -8,6 +8,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -77,9 +78,9 @@ public class StoreService {
 
     public List<StoreMasterDTO> readExcelData(List<Map<String,String>> mapList , String file_name) throws IOException, NoSuchFieldException, IllegalAccessException {
         StoreService service = new StoreService();
-        ClassPathResource resource = new ClassPathResource(file_name);
-        InputStream is = resource.getInputStream();
-        InputStream inputStream = resource.getInputStream();
+        File file = new File(filePath+file_name);
+        InputStream is = new FileInputStream(file);
+        InputStream inputStream = new FileInputStream(file);
 
         List<String> excelHeaders = service.getHeaders(is);
         List<StoreMasterDTO> list = new ArrayList<>();
