@@ -90,18 +90,25 @@ public class StoreService {
         rowIterator.next();
         while (rowIterator.hasNext()){
             Row row = rowIterator.next();
-            //for (Map<String,String> property: mapList ) {
                 StoreMasterDTO storeMasterDTO = new StoreMasterDTO();
+                int i =0;
                 for (String str:excelHeaders    ) {
-                    for (Map<String,String> property: mapList ) {
-                        Class cls = storeMasterDTO.getClass();
-                        if (property.get(str) != null) {
-                            Field field = cls.getDeclaredField(property.get(str));
-                            field.setAccessible(true);
-                            field.set(storeMasterDTO, row.getCell(excelHeaders.indexOf(str)).getStringCellValue());
+                    if (i < mapList.size()){
+                        for (Map<String, String> property : mapList) {
+                            Class cls = storeMasterDTO.getClass();
+                            if (property.containsValue(str)) {
+                                for (String key : property.keySet()) {
+                                    Field field = cls.getDeclaredField(key);
+                                    field.setAccessible(true);
+                                    field.set(storeMasterDTO, row.getCell(excelHeaders.indexOf(str)).getStringCellValue());
+                                }
+                            }
                         }
+                        i++;
                     }
-
+                    else{
+                        break;
+                    }
                 }
                 list.add(storeMasterDTO);
 
