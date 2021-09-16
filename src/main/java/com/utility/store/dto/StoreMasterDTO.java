@@ -1,11 +1,13 @@
 package com.utility.store.dto;
 
+import java.util.Date;
+
 public class StoreMasterDTO {
 
     private String storeId;
     private String bocId;
     private String storeName;
-    private String whenAddedDate;
+    private Date whenAddedDate;
 
     public StoreMasterDTO() {
     }
@@ -34,11 +36,11 @@ public class StoreMasterDTO {
         this.storeName = storeName;
     }
 
-    public String getWhenAddedDate() {
+    public Date getWhenAddedDate() {
         return whenAddedDate;
     }
 
-    public void setWhenAddedDate(String whenAddedDate) {
+    public void setWhenAddedDate(Date whenAddedDate) {
         this.whenAddedDate = whenAddedDate;
     }
 }

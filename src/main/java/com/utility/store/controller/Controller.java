@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,16 +56,18 @@ public class Controller {
     }
 
     @RequestMapping(method = RequestMethod.POST,value = "/getData")
-    public ResponseEntity<?> Phase1(@RequestBody Map<String,Object> map) {
+    public ResponseEntity<?> Phase1(@RequestBody Map<String,String> map) {
         JSONObject responseJsonObject = new JSONObject();
         try {
             List<StoreMasterDTO> list ;
-            String file_name = "";
-            list = storeService.readExcelData((List) map.get("list"),map.get("fileName").toString());
+            String file_name = map.get("fileName");
+            map.remove("fileName");
+            Map<String,List<StoreMasterDTO>> listMap = storeService.readExcelData(map,file_name);
             String message = "task performed successfully";
             responseJsonObject.put("success",true);
             responseJsonObject.put("message",message);
-            responseJsonObject.put("data",list);
+            responseJsonObject.put("errorData",listMap.get("errorData"));
+            responseJsonObject.put("validData",listMap.get("validData"));
         }
         catch (Exception e){
             responseJsonObject.put("success",false);

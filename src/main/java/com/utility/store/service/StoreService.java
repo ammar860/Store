@@ -2,23 +2,44 @@ package com.utility.store.service;
 
 import com.utility.store.dto.StoreMasterDTO;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.lang.reflect.Field;
-import java.net.MalformedURLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+
 
 @Service
 public class StoreService {
         @Value("${app.config.lbs-file-path}")
         String filePath;
+
+    public static boolean validateDate(String strDate) {
+        SimpleDateFormat sdfrmt = new SimpleDateFormat("dd/MM/yyyy");
+        sdfrmt.setLenient(false);
+        try
+        {
+            Date javaDate = sdfrmt.parse(strDate);
+        }
+        catch (ParseException e)
+        {
+            return false;
+        }
+        return true;
+    }
+
+
+
+
 
     public List<Map<String,Object>> readExcelHeaders(InputStream is) throws IOException {
 
@@ -46,7 +67,7 @@ public class StoreService {
         return list;
     }
 
-    public String saveFile(byte[] bytes) throws MalformedURLException, IOException {
+    public String saveFile(byte[] bytes) throws IOException {
 
         String file_name = new Date().getTime() + ".xlsx";
         File file = new File(filePath+file_name);
@@ -76,45 +97,59 @@ public class StoreService {
     }
 
 
-    public List<StoreMasterDTO> readExcelData(List<Map<String,String>> mapList , String file_name) throws IOException, NoSuchFieldException, IllegalAccessException {
+    public Map<String,List<StoreMasterDTO>> readExcelData(Map<String,String> mapping , String file_name) throws IOException, NoSuchFieldException, IllegalAccessException, ParseException {
         StoreService service = new StoreService();
         File file = new File(filePath+file_name);
         InputStream is = new FileInputStream(file);
         InputStream inputStream = new FileInputStream(file);
 
         List<String> excelHeaders = service.getHeaders(is);
+        Map<String,List<StoreMasterDTO>> res = new HashMap<>();
         List<StoreMasterDTO> list = new ArrayList<>();
+        List<StoreMasterDTO> errData = new ArrayList<>();
         XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
         XSSFSheet sheet = workbook.getSheetAt(0);
         Iterator<Row> rowIterator = sheet.iterator();
         rowIterator.next();
         while (rowIterator.hasNext()){
             Row row = rowIterator.next();
-                StoreMasterDTO storeMasterDTO = new StoreMasterDTO();
-                int i =0;
-                for (String str:excelHeaders    ) {
-                    if (i < mapList.size()){
-                        for (Map<String, String> property : mapList) {
-                            Class cls = storeMasterDTO.getClass();
-                            if (property.containsValue(str)) {
-                                for (String key : property.keySet()) {
-                                    Field field = cls.getDeclaredField(key);
-                                    field.setAccessible(true);
-                                    field.set(storeMasterDTO, row.getCell(excelHeaders.indexOf(str)).getStringCellValue());
-                                }
+            StoreMasterDTO storeMasterDTO = new StoreMasterDTO();
+            Boolean errValue = false;
+            for (String str:excelHeaders) {
+                Class cls = storeMasterDTO.getClass();
+                for (String key: mapping.keySet()) {
+                    if(mapping.get(key).equals(str)){
+                        Field field = cls.getDeclaredField(key);
+                        field.setAccessible(true);
+                        DataFormatter formatter = new DataFormatter();
+                        String val = formatter.formatCellValue(row.getCell(excelHeaders.indexOf(str)));
+                        if(field.toString().equals("private java.util.Date com.utility.store.dto.StoreMasterDTO.whenAddedDate")){
+                            errValue=validateDate(val);
+                            if(errValue){
+                                Date date = new SimpleDateFormat("dd/MM/yyyy").parse(val);
+                                field.set(storeMasterDTO, date);
+                            }
+                            else{
+                                DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+                                LocalDateTime now = LocalDateTime.now();
+                                field.set(storeMasterDTO, new SimpleDateFormat("dd/MM/yyyy").parse(dateTimeFormatter.format(now)));
                             }
                         }
-                        i++;
-                    }
-                    else{
-                        break;
+                        else{
+                            field.set(storeMasterDTO, val);
+                        }
                     }
                 }
+            }
+            if(!errValue||storeMasterDTO.getBocId().isEmpty()||storeMasterDTO.getStoreId().isEmpty()){
+                errData.add(storeMasterDTO);
+            }
+            else {
                 list.add(storeMasterDTO);
-
-            //}
+            }
         }
-
-        return list;
+        res.put("validData",list);
+        res.put("errorData",errData);
+        return res;
     }
 }
